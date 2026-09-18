@@ -27,7 +27,6 @@ use colocated regions, pre-warmed models, short TTS chunks and binary media fram
 
 ## Avatar behavior
 
-The protocol already carries expression and blendshape timelines. Full-body
-gestures, gaze targets and “turn toward screen” behavior belong in a future
-motion-policy event so the renderer remains independent of a specific 2D/3D engine.
-
+The protocol carries scored expressions, blendshape timelines, gesture intent and
+gaze targets. The diagnostic renderer reacts to these values; production-quality
+full-body IK and animation blending remain renderer-specific roadmap work.

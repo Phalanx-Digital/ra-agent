@@ -139,9 +139,10 @@ python -m client.local_daemon --config configs/client.yaml
 python -m client.overlay_app
 ```
 
-The v0.1.0 overlay is a renderer shell/diagnostic avatar. Wiring its local IPC
-audio player to daemon events and loading VRM/WebGL assets are explicit next
-milestones.
+The v0.1.0 overlay receives daemon events through a localhost-only WebSocket,
+queues audio chunks, applies expression/gaze/gesture intents, and renders a
+diagnostic avatar. Replacing that drawing layer with production VRM/WebGL assets
+is an explicit next milestone.
 
 ## 5. TLS and public ports
 
@@ -201,4 +202,3 @@ be posted publicly until a private disclosure channel is published.
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).
-

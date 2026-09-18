@@ -20,3 +20,6 @@ capture:
   webcam_device: 0
   webcam_max_width: 640
 
+overlay_bridge:
+  host: 127.0.0.1
+  port: 18765

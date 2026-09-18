@@ -79,6 +79,7 @@ class InferencePipeline:
         self.pending[event.turn_id] = PendingTurn(event.payload, metrics)
         try:
             text = await self.stt.transcribe(b64decode(event.payload["audio_wav_b64"]))
+            self.pending[event.turn_id].bundle["transcript"] = text
             metrics.mark("stt_final")
             await socket.send(
                 Envelope(
@@ -152,6 +153,8 @@ class InferencePipeline:
     async def _speak(self, socket: object, event: Envelope, text: str, sequence: int) -> int:
         audio = await self.tts.synthesize(text)
         motion = self.lipsync.analyze(audio)
+        transcript = self.pending[event.turn_id].bundle.get("transcript", "") if event.turn_id else ""
+        motion_intent = self._motion_intent(transcript, text)
         await socket.send(
             Envelope(
                 type=EventType.AUDIO_CHUNK,
@@ -167,10 +170,30 @@ class InferencePipeline:
                 session_id=event.session_id,
                 turn_id=event.turn_id,
                 sequence=sequence,
-                payload={"expression": "speaking", "blendshapes": motion},
+                payload={**motion_intent, "blendshapes": motion},
             ).dumps()
         )
         return sequence + 1
+
+    @staticmethod
+    def _motion_intent(transcript: str, response: str) -> dict:
+        combined = f"{transcript} {response}".lower()
+        screen_words = ("layar", "screen", "window", "jendela", "lihat ini")
+        laugh_words = ("haha", "hehe", "lucu", "senang", "great", "bagus")
+        if any(word in combined for word in laugh_words):
+            return {
+                "expression": "smile",
+                "expression_score": 0.85,
+                "gesture": "excited",
+                "gaze_target": "user",
+            }
+        look_at_screen = any(word in combined for word in screen_words)
+        return {
+            "expression": "speaking",
+            "expression_score": 0.55,
+            "gesture": "turn_to_screen" if look_at_screen else "conversational",
+            "gaze_target": "screen" if look_at_screen else "user",
+        }
 
     async def _thinking_cue(self, socket: object, event: Envelope) -> None:
         await asyncio.sleep(self.thinking_delay_s)
@@ -219,4 +242,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

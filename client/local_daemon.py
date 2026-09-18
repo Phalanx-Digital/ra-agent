@@ -3,12 +3,11 @@ from __future__ import annotations
 import argparse
 import asyncio
 import contextlib
-import json
 import logging
 import ssl
-from pathlib import Path
 
 from websockets.asyncio.client import connect
+from websockets.asyncio.server import ServerConnection, serve
 
 from aura_link.config import EndpointConfig, load_yaml
 from aura_link.protocol import Envelope, EventType, b64encode, new_id
@@ -29,12 +28,18 @@ class LocalDaemon:
         self.outbox: asyncio.Queue[Envelope] = asyncio.Queue(maxsize=32)
         self.current_turn: str | None = None
         self.ca_file = raw.get("tls", {}).get("ca_file")
+        overlay = raw.get("overlay_bridge", {})
+        self.overlay_host = overlay.get("host", "127.0.0.1")
+        self.overlay_port = int(overlay.get("port", 18765))
+        self.overlay_clients: set[ServerConnection] = set()
 
     async def run_forever(self) -> None:
         backoff = 1.0
         while True:
             try:
-                await self._run_session()
+                async with serve(self._overlay_client, self.overlay_host, self.overlay_port):
+                    LOG.info("Overlay bridge listening on ws://%s:%s", self.overlay_host, self.overlay_port)
+                    await self._run_session()
                 backoff = 1.0
             except asyncio.CancelledError:
                 raise
@@ -66,14 +71,14 @@ class LocalDaemon:
         async for wav in self.vad.utterances():
             if wav == b"__speech_started__":
                 if self.current_turn:
-                    await self.outbox.put(
-                        Envelope(
-                            type=EventType.CANCEL,
-                            session_id=self.session_id,
-                            turn_id=self.current_turn,
-                            payload={"reason": "barge_in"},
-                        )
+                    cancel = Envelope(
+                        type=EventType.CANCEL,
+                        session_id=self.session_id,
+                        turn_id=self.current_turn,
+                        payload={"reason": "barge_in"},
                     )
+                    await self.outbox.put(cancel)
+                    await self._broadcast_overlay(cancel.dumps())
                 continue
             self.current_turn = new_id("turn")
             screen_task = asyncio.to_thread(
@@ -109,11 +114,28 @@ class LocalDaemon:
     async def _receive_loop(self, socket: object) -> None:
         async for raw in socket:
             event = Envelope.loads(raw)
-            # Overlay consumes this localhost event stream in production. Logging keeps
-            # the daemon usable before the optional GUI process is started.
             LOG.info("event=%s turn=%s seq=%s", event.type, event.turn_id, event.sequence)
+            await self._broadcast_overlay(event.dumps())
             if event.type == EventType.RESPONSE_DONE and event.turn_id == self.current_turn:
                 self.current_turn = None
+
+    async def _overlay_client(self, socket: ServerConnection) -> None:
+        self.overlay_clients.add(socket)
+        try:
+            await socket.wait_closed()
+        finally:
+            self.overlay_clients.discard(socket)
+
+    async def _broadcast_overlay(self, raw: str) -> None:
+        clients = tuple(self.overlay_clients)
+        if not clients:
+            return
+        results = await asyncio.gather(
+            *(client.send(raw) for client in clients), return_exceptions=True
+        )
+        for client, result in zip(clients, results, strict=False):
+            if isinstance(result, Exception):
+                self.overlay_clients.discard(client)
 
 
 def main() -> None:
@@ -127,4 +149,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

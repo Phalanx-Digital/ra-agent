@@ -22,5 +22,5 @@ The project uses [Semantic Versioning](https://semver.org/).
 - Ubuntu WebSocket gateway with Hermes/OpenClaw-compatible adapter boundary.
 - Vast.ai inference pipeline with configurable STT, vision, TTS and lip-sync adapters.
 - Streaming text, sentence-level audio chunks, barge-in and natural thinking cues.
+- Localhost daemon-to-overlay bridge with audio queue, gaze and gesture intents.
 - Bearer authentication, WSS configuration, Docker assets, tests and documentation.
-

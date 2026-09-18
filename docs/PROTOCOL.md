@@ -10,7 +10,7 @@ Every message is a JSON `Envelope` containing `type`, `session_id`, optional
 | `agent.context` | Router → GPU | Tool results and memory context |
 | `response.text.delta` | GPU → Client | Incremental assistant text |
 | `response.audio.chunk` | GPU → Client | Ordered audio chunk |
-| `avatar.motion` | GPU → Client | Expression and blendshape timeline |
+| `avatar.motion` | GPU → Client | Scored expression, gesture, gaze target and blendshape timeline |
 | `response.thinking_cue` | GPU → Client | Natural latency filler cue |
 | `response.cancel` | Client → pipeline | Barge-in cancellation |
 | `response.completed` | GPU → Client | Turn completion and latency marks |
@@ -18,4 +18,3 @@ Every message is a JSON `Envelope` containing `type`, `session_id`, optional
 JSON/base64 is intentionally used for the bootstrap release. For production,
 keep the control envelope and move audio/video payloads to binary frames or
 WebRTC to reduce encoding overhead and memory copies.
-
