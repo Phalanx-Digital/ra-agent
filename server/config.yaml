@@ -1,0 +1,64 @@
+host: 0.0.0.0
+port: 9000
+token_env: AURA_INFERENCE_TOKEN
+
+tls:
+  enabled: true
+  cert_file: certs/fullchain.pem
+  key_file: certs/privkey.pem
+
+behavior:
+  thinking_cue_after_s: 1.2
+
+# Native local Faster-Whisper. Change type to openai-compatible and add
+# base_url/api_key_env to use any compatible remote STT provider.
+stt:
+  type: faster-whisper
+  model: large-v3-turbo
+  device: cuda
+  compute_type: float16
+  # type: openai-compatible
+  # base_url: http://127.0.0.1:8000
+  # model: whisper-1
+  # api_key_env: AURA_OPENAI_API_KEY
+
+# Qwen-VL through vLLM/SGLang/Ollama or any OpenAI-compatible multimodal API.
+vision:
+  type: openai-compatible
+  base_url: http://127.0.0.1:8000
+  model: Qwen/Qwen2.5-VL-7B-Instruct
+  api_key_env: AURA_OPENAI_API_KEY
+  timeout_s: 120
+  system_prompt: >-
+    You are Aura, a warm desktop companion. Use the screen and webcam only
+    when relevant. Speak naturally, concisely, and never claim an action was
+    completed unless the tool context confirms it.
+  extra_body: {}
+
+tts:
+  type: fish-speech-http
+  url: http://127.0.0.1:8080/v1/tts
+  api_key_env: AURA_OPENAI_API_KEY
+  reference_id: default-voice
+  reference_audio_path: models/voices/reference.wav
+  format: wav
+  timeout_s: 120
+  # Alternative generic backend:
+  # type: openai-compatible
+  # base_url: http://127.0.0.1:8000
+  # model: custom-tts
+  # voice: aura
+
+lipsync:
+  type: energy-vrm
+  fps: 30
+  # Future native renderer adapter:
+  # type: musetalk-http
+  # url: http://127.0.0.1:8090/v1/blendshapes
+
+vast_ai:
+  public_port: 9000
+  container_port: 9000
+  workspace: /workspace/aura-link
+  model_cache: /workspace/models
+

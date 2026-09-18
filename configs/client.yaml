@@ -1,0 +1,22 @@
+router:
+  url: wss://router.example.com:8765
+  token_env: AURA_ROUTER_TOKEN
+  connect_timeout_s: 10
+  max_message_mb: 24
+
+tls:
+  # Leave null to use the Windows system CA store.
+  ca_file: null
+
+vad:
+  sample_rate: 16000
+  frame_samples: 512
+  silence_seconds: 0.8
+  threshold: 0.5
+
+capture:
+  monitor: 0
+  screen_max_width: 1600
+  webcam_device: 0
+  webcam_max_width: 640
+

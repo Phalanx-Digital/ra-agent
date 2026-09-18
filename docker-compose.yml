@@ -1,0 +1,32 @@
+services:
+  router:
+    build:
+      context: .
+      dockerfile: docker/router/Dockerfile
+    env_file: .env
+    ports: ["8765:8765"]
+    volumes:
+      - ./certs:/app/certs:ro
+      - ./configs/router.yaml:/app/configs/router.yaml:ro
+    restart: unless-stopped
+
+  inference:
+    profiles: ["gpu"]
+    build:
+      context: .
+      dockerfile: docker/server/Dockerfile
+    env_file: .env
+    ports: ["9000:9000"]
+    volumes:
+      - ./certs:/app/certs:ro
+      - ./server/config.yaml:/app/server/config.yaml:ro
+      - ./models:/workspace/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+

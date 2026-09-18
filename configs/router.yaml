@@ -1,0 +1,25 @@
+host: 0.0.0.0
+port: 8765
+client_token_env: AURA_ROUTER_TOKEN
+
+tls:
+  enabled: true
+  cert_file: certs/fullchain.pem
+  key_file: certs/privkey.pem
+  inference_ca_file: null
+
+inference:
+  url: wss://vast-gpu.example.com:9000
+  token_env: AURA_INFERENCE_TOKEN
+  connect_timeout_s: 10
+  max_message_mb: 24
+
+# noop makes the VLM answer directly. Switch to openai-compatible for a
+# Hermes/OpenClaw gateway that exposes /v1/chat/completions.
+agent:
+  type: noop
+  base_url: http://127.0.0.1:8080
+  model: hermes-agent
+  api_key_env: AURA_AGENT_API_KEY
+  timeout_s: 120
+
